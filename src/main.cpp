@@ -6,7 +6,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <strings.h>
 
 #define PORT 8080
 
@@ -16,10 +15,10 @@ int main() {
 
 	hal->start_HAL();
 	
-	hal->write_pwm0(0);
-	hal->write_pwm1(0);
-	hal->write_pwm2(0);
-	hal->write_pwm3(0);
+	hal->write_pwm0(150);
+	hal->write_pwm1(128);
+	hal->write_pwm2(128);
+	hal->write_pwm3(128);
 
 	hal->end_HAL();*/
 
@@ -28,8 +27,10 @@ int main() {
 	struct sockaddr_in address;
 	int opt = 1;
 	socklen_t addrlen = sizeof(address);
-	char buffer[1024] = {0};
-	char* hello = "Hello from DE10";
+	
+	
+	HAL *hal = new HAL();
+	hal->start_HAL();
 
 	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("socket failed");
@@ -60,19 +61,47 @@ int main() {
 		return -1;
 	}
 
-	char buff[80];
+	uint8_t buff[8] = { 0 } ;
+	bool ignore_packet = false;
+
 	for(;;) {
-		bzero(buff, sizeof(buff));
+
+		for(int i = 0; i < 8; i++) {
+			buff[i] = 0;
+		}
+
 		read(new_socket, buff, sizeof(buff));
 
-		printf("From Server : %s", buff);
-		
-		if(strncmp("exit", buff, 4) == 0) {
-			break;
+		if(ignore_packet) {
+			ignore_packet = false;
+			continue;
 		}
+		
+		uint8_t pwm0_speed = buff[0];
+		uint8_t pwm1_speed = buff[1];
+		uint8_t pwm2_speed = buff[2];
+		uint8_t pwm3_speed = buff[3];
+
+		printf("---------\n");
+		printf("PWM0 : %d\n", pwm0_speed);
+		printf("PWM1 : %d\n", pwm1_speed);
+		printf("PWM2 : %d\n", pwm2_speed);
+		printf("PWM3 : %d\n", pwm3_speed);
+
+		ignore_packet = true;
+		
+		hal->write_pwm0(pwm0_speed);
+		hal->write_pwm1(pwm1_speed);
+		hal->write_pwm2(pwm2_speed);
+		hal->write_pwm3(pwm3_speed);
+
+		//if(exit) {
+		//	break;
+		//}
 	}	
 
 	close(server_fd);
+	hal->end_HAL();
 
 	return 0;
 }
