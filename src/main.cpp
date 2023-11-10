@@ -1,7 +1,8 @@
 #include <HAL.h>
 
-#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -22,38 +23,56 @@ int main() {
 
 	hal->end_HAL();*/
 
-	int status, valread, client_fd;
-	struct sockaddr_in serv_addr;
+	int server_fd, new_socket;
+	ssize_t valread;
+	struct sockaddr_in address;
+	int opt = 1;
+	socklen_t addrlen = sizeof(address);
+	char buffer[1024] = {0};
+	char* hello = "Hello from DE10";
 
-	if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		printf("Socket creation error \n");
+	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		perror("socket failed");
 		return -1;
 	}
 
-	bzero(&serv_addr, sizeof(serv_addr));
+	if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEADDR, &opt, sizeof(opt))) {
+		perror("setsockopt");
+		return -1;
+	}
 
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = inet_addr("192.168.1.102");
-	serv_addr.sin_port = htons(PORT);
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = INADDR_ANY;
+	address.sin_port = htons(PORT);
 
-	if(connect(client_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) != 0) {
-		printf("Connection with the server failed");
+	if(bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+		perror("bind failed");
+		return -1;
+	}
+
+	if(listen(server_fd, 3) < 0) {
+		perror("listen");
+		return -1;
+	}
+
+	if((new_socket = accept(server_fd, (struct sockaddr*)&address, &addrlen)) < 0) {
+		perror("accept");
 		return -1;
 	}
 
 	char buff[80];
 	for(;;) {
 		bzero(buff, sizeof(buff));
-		read(client_fd, buff, sizeof(buff));
+		read(new_socket, buff, sizeof(buff));
 
 		printf("From Server : %s", buff);
-
+		
 		if(strncmp("exit", buff, 4) == 0) {
 			break;
 		}
 	}	
 
-	close(client_fd);
+	close(server_fd);
 
 	return 0;
 }
