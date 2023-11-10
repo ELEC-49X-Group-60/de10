@@ -42,3 +42,24 @@ void HAL::write_pwm0(uint8_t val) {
 
 	*(reinterpret_cast<uint8_t *>(addr)) = val;
 }
+
+
+void HAL::write_pwm1(uint8_t val) {
+	uint8_t *addr = bridge_map + PWM1;
+
+	*(reinterpret_cast<uint8_t *>(addr)) = val;
+}
+
+
+void HAL::write_pwm2(uint8_t val) {
+	uint8_t *addr = bridge_map + PWM2;
+
+	*(reinterpret_cast<uint8_t *>(addr)) = val;
+}
+
+
+void HAL::write_pwm3(uint8_t val) {
+	uint8_t *addr = bridge_map + PWM3;
+
+	*(reinterpret_cast<uint8_t *>(addr)) = val;
+}
